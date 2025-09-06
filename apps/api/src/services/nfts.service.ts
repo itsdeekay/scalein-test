@@ -4,6 +4,8 @@ import { User } from '../models/User';
 import { Collection } from '../models/Collection';
 import { Transaction } from '../models/Transaction';
 import { HttpError } from '../utils/errors';
+import { parseBody, parseParams } from '../utils/validator';
+import { ListForSaleSchema, NftIdSchema } from '../schemas/nft.schemas';
 
 const MintSchema = z.object({
   name: z.string().min(2),
@@ -117,17 +119,34 @@ export const NftsService = {
   },
 
   async listForSale(userId: string, nftId: string, priceInput: any) {
-    const price = Number(priceInput);
-    if (!price || price <= 0) throw HttpError.badRequest('Invalid price');
-    const nft = await NFT.findById(nftId);
-    if (!nft) throw HttpError.notFound('Not found');
-    if (nft.owner.toString() !== userId)
-      throw HttpError.forbidden('Not owner');
+    // Validate NFT ID parameter
+    const { id: validatedNftId } = parseParams(NftIdSchema, { id: nftId });
+    
+    // Validate price input using Zod schema
+    const { price } = parseBody(ListForSaleSchema, { price: priceInput });
+    
+    // Check if NFT exists
+    const nft = await NFT.findById(validatedNftId);
+    if (!nft) {
+      throw HttpError.notFound('NFT not found');
+    }
+    
+    // Check ownership
+    if (nft.owner.toString() !== userId) {
+      throw HttpError.forbidden('You do not own this NFT');
+    }
+    
+    // Check if NFT is already listed
+    if (nft.onSale) {
+      throw HttpError.conflict('NFT is already listed for sale');
+    }
 
+    // Update NFT with validated price
     nft.price = price;
     nft.onSale = true;
     await nft.save();
 
+    // Create transaction record
     await Transaction.create({
       type: 'list',
       nft: nft._id,
@@ -139,14 +158,30 @@ export const NftsService = {
   },
 
   async unlist(userId: string, nftId: string) {
-    const nft = await NFT.findById(nftId);
-    if (!nft) throw HttpError.notFound('Not found');
-    if (nft.owner.toString() !== userId)
-      throw HttpError.forbidden('Not owner');
+    // Validate NFT ID parameter
+    const { id: validatedNftId } = parseParams(NftIdSchema, { id: nftId });
+    
+    // Check if NFT exists
+    const nft = await NFT.findById(validatedNftId);
+    if (!nft) {
+      throw HttpError.notFound('NFT not found');
+    }
+    
+    // Check ownership
+    if (nft.owner.toString() !== userId) {
+      throw HttpError.forbidden('You do not own this NFT');
+    }
+    
+    // Check if NFT is currently listed
+    if (!nft.onSale) {
+      throw HttpError.badRequest('NFT is not currently listed for sale');
+    }
 
+    // Update NFT status
     nft.onSale = false;
     await nft.save();
 
+    // Create transaction record
     await Transaction.create({
       type: 'unlist',
       nft: nft._id,

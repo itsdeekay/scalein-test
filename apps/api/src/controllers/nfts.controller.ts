@@ -18,17 +18,27 @@ export const NftsController = {
   },
 
   async listForSale(req: Request, res: Response) {
-    const nft = await NftsService.listForSale(
-      (req as any).user.id,
-      req.params.id,
-      req.body.price
-    );
-    res.json(nft);
+    try {
+      const nft = await NftsService.listForSale(
+        (req as any).user.id,
+        req.params.id,
+        req.body.price
+      );
+      res.json(nft);
+    } catch (error: any) {
+      // Error handling is done in the service layer with proper HTTP status codes
+      throw error;
+    }
   },
 
   async unlist(req: Request, res: Response) {
-    const nft = await NftsService.unlist((req as any).user.id, req.params.id);
-    res.json(nft);
+    try {
+      const nft = await NftsService.unlist((req as any).user.id, req.params.id);
+      res.json(nft);
+    } catch (error: any) {
+      // Error handling is done in the service layer with proper HTTP status codes
+      throw error;
+    }
   },
 
   async buy(req: Request, res: Response) {
