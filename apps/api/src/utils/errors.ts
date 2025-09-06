@@ -19,4 +19,7 @@ export class HttpError extends Error {
   static conflict(msg = 'Conflict') {
     return new HttpError(409, msg);
   }
+  static internalServerError(msg = 'Internal Server Error') {
+    return new HttpError(500, msg);
+  }
 }

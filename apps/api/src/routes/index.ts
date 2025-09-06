@@ -6,6 +6,7 @@ import collectionsRoutes from './collections.routes';
 import marketRoutes from './market.routes';
 import imagesRoutes from './images.routes';
 import uploadRoutes from './upload.routes';
+import metricsRoutes from './metrics.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/collections', collectionsRoutes);
 router.use('/market', marketRoutes);
 router.use('/image', imagesRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/metrics', metricsRoutes);
 
 export default router;
